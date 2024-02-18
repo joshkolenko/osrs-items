@@ -64,7 +64,7 @@ export default function Home() {
   return (
     <main>
       <div className="container max-w-md mx-auto text-center py-16 px-3 prose">
-        <h1>OSRS APIs</h1>
+        <h1>OSRS Items</h1>
         <h3>Search Wiki</h3>
         <div className="relative">
           <form className="join gap-3 w-[100%]" onSubmit={handleSearchSubmit}>

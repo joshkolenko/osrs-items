@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   const priceData = (await priceResponse.json()).data;
 
   const geids = JSON.parse(
-    fs.readFileSync(process.cwd() + 'app/api/data/geids.json', 'utf-8')
+    fs.readFileSync(process.cwd() + 'data/geids.json', 'utf-8')
   );
 
   const formattedData: (SearchResponse | undefined)[] = searchData[1]

@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'OSRS APIs',
-  description: 'Old School RuneScape APIs',
+  title: 'OSRS Items',
+  description: 'Old School RuneScape Items',
 };
 
 export default function RootLayout({

@@ -43,7 +43,9 @@ export async function GET(request: NextRequest) {
   const priceResponse = await fetch(process.env.PRICES_API_URL + '/latest');
   const priceData = (await priceResponse.json()).data;
 
-  const geids = JSON.parse(fs.readFileSync('app/data/geids.json', 'utf-8'));
+  const geids = JSON.parse(
+    fs.readFileSync(process.cwd() + 'app/api/data/geids.json', 'utf-8')
+  );
 
   const formattedData: (SearchResponse | undefined)[] = searchData[1]
     .map((title, i) => {
@@ -59,8 +61,6 @@ export async function GET(request: NextRequest) {
       };
     })
     .filter(Boolean);
-
-  console.log(formattedData);
 
   return Response.json(formattedData);
 }

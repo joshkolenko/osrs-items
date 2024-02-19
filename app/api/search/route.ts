@@ -1,18 +1,7 @@
-import { NextRequest } from 'next/server';
-import fs from 'fs';
+import type { WikiAPIResponse } from '@/types';
 
-type WikiAPIResponse = [string, string[], string[], string[]];
-export type SearchResponse = {
-  geid: number;
-  title: string;
-  url: string;
-  price: {
-    high: number;
-    highTime: number;
-    low: number;
-    lowTime: number;
-  };
-};
+import { NextRequest } from 'next/server';
+import { getGEIDs } from '@/util/osrs-wiki';
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
@@ -40,25 +29,13 @@ export async function GET(request: NextRequest) {
   const searchResponse = await fetch(searchURL);
   const searchData: WikiAPIResponse = await searchResponse.json();
 
-  const priceResponse = await fetch(process.env.PRICES_API_URL + '/latest');
-  const priceData = (await priceResponse.json()).data;
+  const geids = await getGEIDs();
 
-  const geids = JSON.parse(
-    fs.readFileSync(process.cwd() + '/data/geids.json', 'utf-8')
-  );
+  const formattedData: (string | undefined)[] = searchData[1]
+    .map(title => {
+      if (!geids[title]) return;
 
-  const formattedData: (SearchResponse | undefined)[] = searchData[1]
-    .map((title, i) => {
-      const geid: number = geids[title];
-
-      if (!geid) return;
-
-      return {
-        geid,
-        title,
-        url: searchData[3][i],
-        price: priceData[geid],
-      };
+      return title;
     })
     .filter(Boolean);
 

@@ -60,8 +60,8 @@ export default function Home() {
       <Container>
         <h1>OSRS Items</h1>
         <h3>Search</h3>
-        <div className="relative">
-          <form className="join gap-3 w-[75%]" onSubmit={handleSearchSubmit}>
+        <div className="relative max-w-md mx-auto">
+          <form className="join gap-3 w-[100%]" onSubmit={handleSearchSubmit}>
             <input
               className="input input-bordered bg-gray-900 border-slate-700 w-[100%]"
               type="text"
@@ -70,7 +70,7 @@ export default function Home() {
             <button className="btn btn-primary">Search</button>
           </form>
           {results.length > 0 ? (
-            <div className="absolute top-[calc(100%+0.75rem)] left-[50%] translate-x-[-50%] w-[75%] max-h-72 text-left bg-gray-900 border border-slate-700 rounded-lg overflow-scroll">
+            <div className="absolute top-[calc(100%+0.75rem)] left-[50%] translate-x-[-50%] w-[100%] max-h-72 text-left bg-gray-900 border border-slate-700 rounded-lg overflow-scroll">
               <table className="table m-0" ref={resultsRef}>
                 <tbody>{renderedResults}</tbody>
               </table>

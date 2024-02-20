@@ -1,75 +1,67 @@
 import Container from '@/components/Container/Container';
 import PriceChange from '@/components/PriceChange/PriceChange';
 
-import getItemData from '@/util/get-item-data';
+import { createItem } from '@/util/osrs-wiki';
+
 import numeral from 'numeral';
 
 export default async function Page({ params }: { params: { slug: string } }) {
-  const itemData = await getItemData(params.slug);
+  const title = decodeURIComponent(params.slug);
 
-  const { title, priceData } = itemData;
-  const { latest, daily } = priceData;
+  // return <div>{title}</div>;
 
-  function getLastAvgHighPrice() {
-    let lastAvgHighPrice = 0;
+  const item = createItem(title);
+
+  const latest = await item.getLatestPriceData();
+  const daily = await item.getPriceData('24h');
+  const volume = await item.getVolume();
+
+  function getRecentPrice(prop: 'avgHighPrice' | 'avgLowPrice') {
+    let recentPrice = 0;
 
     for (let i = daily.length - 1; i >= 0; i--) {
-      const avgHighPrice = daily[i].avgHighPrice;
+      const price = daily[i][prop];
 
-      if (avgHighPrice !== null) {
-        lastAvgHighPrice = avgHighPrice;
+      if (price !== null) {
+        recentPrice = price;
         break;
       }
     }
 
-    return lastAvgHighPrice;
-  }
-
-  function getLastAvgLowPrice() {
-    let lastAvgLowPrice = 0;
-
-    for (let i = daily.length - 1; i >= 0; i--) {
-      const avgLowPrice = daily[i].avgLowPrice;
-
-      if (avgLowPrice !== null) {
-        lastAvgLowPrice = avgLowPrice;
-        break;
-      }
-    }
-
-    return lastAvgLowPrice;
+    return recentPrice;
   }
 
   return (
-    <Container>
-      <h1>{title}</h1>
-      <div className="stats stats-vertical lg:stats-horizontal shadow text-left bg-slate-800">
+    <Container className="py-12 sm:py-20">
+      <h1 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">{title}</h1>
+      <div className="stats stats-vertical w-full lg:stats-horizontal shadow bg-base-200">
         <div className="stat">
-          <div className="stat-title text-slate-500">Buy price</div>
-          <div className="stat-value text-slate-400">
+          <div className="stat-title">Buy price</div>
+          <div className="stat-value">
             {numeral(latest.high).format('0,0')} coins
           </div>
           <div className="stat-desc">
             <PriceChange
               latest={latest.high}
-              previous={getLastAvgHighPrice()}
+              previous={getRecentPrice('avgHighPrice')}
             />
           </div>
         </div>
         <div className="stat">
-          <div className="stat-title text-slate-500">Sell price</div>
-          <div className="stat-value text-slate-400">
+          <div className="stat-title">Sell price</div>
+          <div className="stat-value">
             {numeral(latest.low).format('0,0')} coins
           </div>
           <div className="stat-desc">
-            <PriceChange latest={latest.low} previous={getLastAvgLowPrice()} />
+            <PriceChange
+              latest={latest.low}
+              previous={getRecentPrice('avgLowPrice')}
+            />
           </div>
         </div>
         <div className="stat">
-          <div className="stat-title text-slate-500">Volume</div>
-          <div className="stat-value text-slate-400">
-            {numeral(itemData.volume).format('0,0')}
-          </div>
+          <div className="stat-title">Volume</div>
+          <div className="stat-value">{numeral(volume).format('0,0')}</div>
         </div>
       </div>
     </Container>

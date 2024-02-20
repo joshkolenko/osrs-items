@@ -53,6 +53,16 @@ export async function getExamine(title: string) {
   return examine;
 }
 
+export async function getHA(title: string) {
+  const ha = await expandWikiTemplate('HA', [title]);
+  return parseInt(ha);
+}
+
+export async function getLA(title: string) {
+  const la = await expandWikiTemplate('LA', [title]);
+  return parseInt(la);
+}
+
 export async function getLimit(title: string) {
   const limit = await expandWikiTemplate('GEInfo', [title, 'limit']);
   return parseInt(limit);
@@ -108,6 +118,12 @@ export function createItem(title: string) {
     getExamine() {
       return getExamine(title);
     },
+    getHA() {
+      return getHA(title);
+    },
+    getLA() {
+      return getLA(title);
+    },
     getLimit() {
       return getLimit(title);
     },
@@ -128,6 +144,8 @@ const osrsWiki = {
   getId,
   getDiff,
   getExamine,
+  getHA,
+  getLA,
   getGEIDs,
   getLimit,
   getPriceData,

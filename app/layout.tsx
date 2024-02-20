@@ -19,11 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="bg-gray-900">
-      <body className={inter.className + ' p-4'}>
-        <Link href="/" className="btn btn-ghost btn-secondary">
-          Home
-        </Link>
+    <html lang="en" data-theme="dracula">
         {children}
       </body>
     </html>

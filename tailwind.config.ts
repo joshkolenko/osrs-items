@@ -10,5 +10,8 @@ const config: Config = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   plugins: [typography, daisy],
+  daisyui: {
+    themes: ['dracula'],
+  },
 };
 export default config;

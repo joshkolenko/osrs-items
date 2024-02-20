@@ -79,7 +79,7 @@ export default function Search() {
   return (
     <div className="relative w-full">
       <label
-        className="input input-ghost focus-within:outline-none focus-within:border-neutral cursor-text h-10 flex items-center gap-4 w-full"
+        className="input bg-base-200 focus-within:outline-none focus-within:border-neutral cursor-text h-12 sm:h-10 flex items-center gap-4 w-full"
         ref={inputRef}
       >
         <FontAwesomeIcon
@@ -87,7 +87,7 @@ export default function Search() {
           className="w-4 h-4 text-base-content opacity-50"
         />
         <input
-          className="text-sm w-full text-base-content placeholder:text-base-content placeholder:opacity-75"
+          className="w-full text-base-content placeholder:text-base-content placeholder:opacity-75"
           type="text"
           placeholder="Search items..."
           onChange={e => setValue(e.target.value)}

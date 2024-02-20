@@ -11,7 +11,7 @@ export default function Nav() {
             OSRS Items
           </Link>
         </div>
-        <div className="mt-3 sm:mt-0 ml-auto lg:ml-36 w-full sm:w-96">
+        <div className="mt-3 sm:mt-0 ml-auto lg:ml-32 w-full sm:w-96">
           <Search />
         </div>
       </Container>

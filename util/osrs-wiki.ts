@@ -1,4 +1,4 @@
-import type { PriceData, PriceDataTimeseries } from '@/types';
+import type { PriceDataLatest, PriceDataTimeseries } from '@/types';
 
 export async function expandWikiTemplate(template: string, params: string[]) {
   params.unshift(template);
@@ -15,6 +15,20 @@ export async function expandWikiTemplate(template: string, params: string[]) {
 
   return json.expandtemplates.wikitext;
 }
+
+export async function search(query: string) {
+  const url = new URL('https://oldschool.runescape.wiki/api.php');
+  url.searchParams.append('action', 'opensearch');
+  url.searchParams.append('search', query);
+  url.searchParams.append('format', 'json');
+
+  const res = await fetch(url);
+  const json = await res.json();
+
+  return json[1];
+}
+
+// Items
 
 export async function getGEIDs() {
   const res = await fetch(
@@ -67,7 +81,7 @@ export async function getPriceData(
 
 export async function getLatestPriceData(
   title: string
-): Promise<PriceData['latest']> {
+): Promise<PriceDataLatest> {
   const id = await getId(title);
 
   const url = new URL('https://prices.runescape.wiki/api/v1/osrs/latest');
@@ -110,6 +124,7 @@ export function createItem(title: string) {
 }
 
 const osrsWiki = {
+  search,
   getId,
   getDiff,
   getExamine,

@@ -1,14 +1,10 @@
 export type WikiAPIResponse = [string, string[], string[], string[]];
 
-export interface PriceData {
-  latest: {
-    high: number;
-    highTime: number;
-    low: number;
-    lowTime: number;
-  };
-  daily: PriceDataTimeseries;
-  hourly: PriceDataTimeseries;
+export interface PriceDataLatest {
+  high: number;
+  highTime: number;
+  low: number;
+  lowTime: number;
 }
 
 export type PriceDataTimeseries = {
@@ -25,6 +21,5 @@ export interface ItemData {
   diff: number;
   examine: string;
   limit: number;
-  priceData: PriceData;
   volume: number;
 }

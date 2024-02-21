@@ -28,7 +28,7 @@ export default function Results({
     return (
       <li key={result}>
         <Link
-          href={'/item/' + result}
+          href={'/item/' + encodeURIComponent(result)}
           className="block px-3 py-2 text-sm rounded-md hover:bg-neutral hover:text-neutral-content focus:bg-neutral focus:text-neutral-content"
         >
           {renderedText}

@@ -3,20 +3,20 @@
 import { useEffect, useState, useCallback, useRef, RefObject } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { search, getGEIDs } from '@/util/osrs-wiki';
-import { useDebounce } from 'use-debounce';
+import { getData } from '@/util/osrs-wiki';
+import { matchSorter } from 'match-sorter';
 import Results from './Results';
 
 export default function Search() {
   const [geids, setGeids] = useState({} as { [key: string]: number });
-  const [value, setValue] = useState('');
-  const [query] = useDebounce(value, 200);
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState([] as string[]);
   const inputRef = useRef<HTMLLabelElement>(null);
 
   useEffect(() => {
     async function getGeids() {
-      const geids = await getGEIDs();
+      console.log('FETCHING');
+      const { geids } = await getData('geids');
       setGeids(geids);
     }
 
@@ -24,16 +24,10 @@ export default function Search() {
   }, []);
 
   const updateResults = useCallback(() => {
-    async function getResults() {
-      console.log('getResults');
-      const results: string[] = await search(query);
-      const filteredResults = results.filter(result => geids[result]);
-
-      setResults(filteredResults);
-    }
-
     if (query) {
-      getResults();
+      const matches = matchSorter(Object.keys(geids), query).slice(0, 25);
+
+      setResults(matches);
     } else {
       setResults([]);
     }
@@ -90,7 +84,7 @@ export default function Search() {
           className="w-full text-base-content placeholder:text-base-content placeholder:opacity-75"
           type="text"
           placeholder="Search items..."
-          onChange={e => setValue(e.target.value)}
+          onChange={e => setQuery(e.target.value)}
           onFocus={updateResults}
         />
         <div className="flex gap-1 items-center">
@@ -98,7 +92,7 @@ export default function Search() {
           <kbd className="kbd kbd-sm hidden sm:flex">K</kbd>
         </div>
       </label>
-      <Results results={results} />
+      <Results query={query} results={results} />
     </div>
   );
 }

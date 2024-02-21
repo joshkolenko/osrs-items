@@ -38,7 +38,7 @@ export default function Results({
   });
 
   return (
-    <ul className="absolute top-14 w-full flex flex-col p-2 bg-base-100 border border-neutral rounded-md max-h-[20rem] overflow-scroll">
+    <ul className="absolute z-50 top-14 w-full flex flex-col p-2 bg-base-100 border border-neutral rounded-md max-h-[20rem] overflow-scroll">
       {rendered}
     </ul>
   );

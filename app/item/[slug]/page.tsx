@@ -1,7 +1,7 @@
 import Container from '@/components/Container/Container';
 import PriceChange from '@/components/PriceChange/PriceChange';
 
-import { createItem } from '@/util/osrs-wiki';
+import { createItem, getItemData } from '@/util/osrs-wiki';
 
 import numeral from 'numeral';
 
@@ -12,17 +12,20 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
   const item = createItem(title);
 
-  const latest = await item.getLatestPriceData();
-  const daily = await item.getPriceData('24h');
-  const volume = await item.getVolume();
-  const ha = await item.getHA();
-  const la = await item.getLA();
+  const { latest, timeseries, volume, ha, la, limit, examine } =
+    await getItemData(
+      title,
+      ['latest', 'timeseries', 'volume', 'ha', 'la', 'limit', 'examine'],
+      { timestep: '24h' }
+    );
+
+  const profit = latest.low - latest.high;
 
   function getRecentPrice(prop: 'avgHighPrice' | 'avgLowPrice') {
     let recentPrice = 0;
 
-    for (let i = daily.length - 1; i >= 0; i--) {
-      const price = daily[i][prop];
+    for (let i = timeseries.length - 1; i >= 0; i--) {
+      const price = timeseries[i][prop];
 
       if (price !== null) {
         recentPrice = price;

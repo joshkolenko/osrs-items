@@ -8,8 +8,6 @@ import numeral from 'numeral';
 export default async function Page({ params }: { params: { slug: string } }) {
   const title = decodeURIComponent(params.slug);
 
-  // return <div>{title}</div>;
-
   const item = createItem(title);
 
   const { latest, timeseries, volume, ha, la, limit, examine } =
@@ -38,7 +36,8 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
   return (
     <Container className="py-12 sm:py-20">
-      <h1 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6">{title}</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold mb-4">{title}</h1>
+      <p className="mb-6">{examine}</p>
       <div className="flex flex-wrap gap-6">
         <div className="stats stats-vertical lg:stats-horizontal flex-shrink-0 w-full lg:w-auto bg-base-200">
           <div className="stat">
@@ -65,14 +64,22 @@ export default async function Page({ params }: { params: { slug: string } }) {
               />
             </div>
           </div>
-        </div>
-        <div className="stats stats-vertical lg:stats-horizontal flex-grow w-full sm:w-auto bg-base-200">
+          <div className="stat">
+            <div className="stat-title">Profit</div>
+            <div
+              className={`stat-value ${
+                profit > 0 ? 'text-green-500' : 'text-red-500'
+              }`}
+            >
+              {numeral(latest.low - latest.high).format('0,0')}
+            </div>
+          </div>
           <div className="stat">
             <div className="stat-title">Volume</div>
             <div className="stat-value">{numeral(volume).format('0,0')}</div>
           </div>
         </div>
-        <div className="stats stats-vertical sm:stats-horizontal w-full sm:w-auto bg-base-200">
+        <div className="stats stats-vertical sm:stats-horizontal w-full bg-base-200">
           <div className="stat">
             <div className="stat-title">High alch</div>
             <div className="stat-value">{numeral(ha).format('0,0')}</div>
@@ -80,6 +87,10 @@ export default async function Page({ params }: { params: { slug: string } }) {
           <div className="stat">
             <div className="stat-title">Low alch</div>
             <div className="stat-value">{numeral(la).format('0,0')}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-title">Buy limit</div>
+            <div className="stat-value">{numeral(limit).format('0,0')}</div>
           </div>
         </div>
       </div>

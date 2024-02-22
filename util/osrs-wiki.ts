@@ -1,214 +1,207 @@
 import type { OSRSWiki } from '@/types';
 
-async function getWikiTextData(properties: OSRSWiki.WikitextData.Property[]) {
-  const req: {
-    [key in keyof OSRSWiki.PropertyMap]?: string;
-  } = {};
+import path from 'path';
+import { decode } from 'html-entities';
 
-  properties.forEach(property => {
-    if (property.name) {
-      const name = property.name as OSRSWiki.PropertyMapKey;
-      req[name] = property.wikitext;
-    }
-  });
-
+async function getTemplateData(templates: Partial<OSRSWiki.Templates>) {
   const url = new URL('https://oldschool.runescape.wiki/api.php');
   url.searchParams.append('action', 'expandtemplates');
   url.searchParams.append('prop', 'wikitext');
-  url.searchParams.append('text', JSON.stringify(req));
+  url.searchParams.append('text', JSON.stringify(templates));
   url.searchParams.append('format', 'json');
 
   const res = await fetch(url);
   const json = await res.json();
-  const cleaned = json.expandtemplates.wikitext.replace(
-    /(?:"(?={)|(?<=})")/gm,
-    ''
-  );
+  const data = JSON.parse(json.expandtemplates.wikitext);
 
-  const data = JSON.parse(cleaned);
+  const typeMap = {
+    examine: 'string',
+    ha: 'number',
+    icon: 'string',
+    la: 'number',
+    limit: 'number',
+    members: 'boolean',
+    volume: 'number',
+  };
 
-  return data;
+  Object.entries(typeMap).forEach(([key, type]) => {
+    if (data[key]) {
+      if (type === 'number') {
+        data[key] = parseInt(data[key]);
+      }
+
+      if (type === 'boolean') {
+        data[key] = data[key] === '1';
+      }
+
+      if (type === 'string') {
+        data[key] = decode(data[key].trim());
+      }
+    }
+  });
+
+  if (data.icon) {
+    data.icon = data.icon.replaceAll(' ', '_');
+  }
+
+  return data as OSRSWiki.TemplateData;
 }
 
-async function getRealTimePriceData(
-  properties: OSRSWiki.RealTimePriceData.Property[]
-) {
+async function getGeids() {
+  const res = await fetch(
+    'https://oldschool.runescape.wiki/?title=Module:GEIDs/data.json&action=raw&ctype=application%2Fjson'
+  );
+  const data = await res.json();
+
+  return data as OSRSWiki.GEIDs;
+}
+
+export async function getData<
+  P extends OSRSWiki.Property,
+  O extends OSRSWiki.Options
+>(props: P | P[], options?: O) {
+  const properties = Array.isArray(props) ? props : [props];
+
+  const defaults: OSRSWiki.Options = {
+    item: '',
+    timestep: '24h',
+  };
+
+  const settings: OSRSWiki.Options = Object.assign(defaults, options);
+
+  const { item, timestep } = settings;
+
+  const geids = (await getGeids()) as OSRSWiki.GEIDs;
+  let id = 0;
+
+  const requiresItem: Partial<OSRSWiki.Property[]> = [
+    'examine',
+    'ha',
+    'icon',
+    'la',
+    'limit',
+    'members',
+    'volume',
+  ];
+
+  const itemRequired = properties.some(prop => requiresItem.includes(prop));
+
+  if (itemRequired) {
+    if (!item) {
+      throw new Error('Item is required');
+    }
+
+    const itemId = geids[item];
+
+    if (typeof itemId === 'number') {
+      id = itemId;
+    }
+
+    if (!id) {
+      throw new Error('Item not found');
+    }
+  }
+
+  const templates: OSRSWiki.Templates = {
+    examine: `{{GEInfo|${item}|examine}}`,
+    ha: `{{HA|${item}}}`,
+    icon: `{{GEInfo|${item}|icon}}`,
+    members: `{{GEInfo|${item}|members}}`,
+    la: `{{LA|${item}}}`,
+    limit: `{{GEInfo|${item}|limit}}`,
+    volume: `{{GEInfo|${item}|volume}}`,
+  };
+
+  const filteredTemplates: OSRSWiki.FilteredTemplates = Object.fromEntries(
+    Object.keys(templates)
+      .filter(key => properties.includes(key as P))
+      .map(key => [key, templates[key as keyof OSRSWiki.Templates]])
+  );
+
+  const priceAPIURL = new URL(
+    'https://prices.runescape.wiki/api/v1/osrs/latest'
+  );
+
+  const requests: OSRSWiki.Requests = {
+    async templates() {
+      return await getTemplateData(filteredTemplates);
+    },
+    geids() {
+      return geids;
+    },
+    id() {
+      return id;
+    },
+    async latest() {
+      const url = priceAPIURL;
+      url.searchParams.append('id', id.toString());
+
+      const res = await fetch(url);
+      return (await res.json()).data[id];
+    },
+    async prices() {
+      const res = await fetch(priceAPIURL);
+
+      return (await res.json()).data;
+    },
+    async timeseries() {
+      if (!timestep) {
+        throw new Error('Timestep is required for timeseries data');
+      }
+
+      const timesteps: OSRSWiki.Timestep[] = Array.isArray(timestep)
+        ? timestep
+        : [timestep];
+
+      const url = new URL(
+        'https://prices.runescape.wiki/api/v1/osrs/timeseries'
+      );
+      url.searchParams.append('id', id.toString());
+
+      const data: {
+        [key: string]: any;
+      } = {};
+
+      for await (const step of timesteps) {
+        url.searchParams.set('timestep', step);
+        const res = await fetch(url);
+
+        data[step] = (await res.json()).data;
+      }
+
+      return data;
+    },
+  };
+
   const data: {
-    [key: string]: any;
+    [key: string]: Partial<OSRSWiki.Data>;
   } = {};
 
-  for await (const property of properties) {
-    const { name, url, params } = property;
-
-    params?.forEach(param => url.searchParams.append(param.name, param.value));
-
-    const res = await fetch(url);
-    const json = (await res.json()).data;
-
-    if (name === 'latest') {
-      const id = params?.find(param => param.name === 'id')?.value;
-      data[name] = json[id as string] as OSRSWiki.RealTimePriceData.Latest;
-    } else if (name) {
-      data[name] = json;
-    }
-  }
-
-  Object.keys(data).forEach(key => {
-    const value = data[key];
-    if (!isNaN(value) && !isNaN(parseInt(value))) {
-      data[key] = parseInt(value);
-    }
-  });
-
-  return data;
-}
-
-function mapProperties(
-  map: OSRSWiki.PropertyMap,
-  properties: OSRSWiki.PropertyMapKey[]
-) {
-  const mappedProperties: OSRSWiki.MappedProperties = {
-    wikitext: [],
-    realTimePrice: [],
-  };
-
-  properties.forEach(property => {
-    const data = (map as OSRSWiki.PropertyMap)[property];
-    data.name = property as string;
-
-    if (data.type === 'wikitext') {
-      mappedProperties.wikitext.push(data);
-    } else if (data.type === 'real-time-price') {
-      mappedProperties.realTimePrice.push(data);
-    }
-  });
-
-  return mappedProperties;
-}
-
-async function dispatch(
-  map: OSRSWiki.ItemData.PropertyMap | OSRSWiki.Data.PropertyMap,
-  properties:
-    | (OSRSWiki.Data.PropertyMapKey | OSRSWiki.Data.PropertyMapKey[])
-    | (OSRSWiki.ItemData.PropertyKey | OSRSWiki.ItemData.PropertyKey[])
-) {
-  const array = Array.isArray(properties) ? properties : [properties];
-
-  const mappedProperties = mapProperties(
-    map as OSRSWiki.PropertyMap,
-    array as OSRSWiki.PropertyMapKey[]
+  const filteredRequests = Object.fromEntries(
+    Object.entries(requests).filter(([key]) => properties.includes(key as P))
   );
 
-  const wikitextData = await getWikiTextData(mappedProperties.wikitext);
-  const realTimePriceData = await getRealTimePriceData(
-    mappedProperties.realTimePrice
-  );
-
-  const data = {
-    ...wikitextData,
-    ...realTimePriceData,
-  };
-
-  return data;
-}
-
-export async function getItemData(
-  item: string = '',
-  properties: OSRSWiki.ItemData.PropertyKey[] | OSRSWiki.ItemData.PropertyKey,
-  options: OSRSWiki.ItemData.Options = { timestep: '5m' }
-) {
-  const { timestep } = options;
-
-  let id = '';
-
-  const map: OSRSWiki.ItemData.PropertyMap = {
-    id: {
-      type: 'wikitext',
-      wikitext: `{{GEId|${item}}}`,
-    },
-    diff: {
-      type: 'wikitext',
-      wikitext: `{{GEDiff|${item}}}`,
-    },
-    examine: {
-      type: 'wikitext',
-      wikitext: `{{GEInfo|${item}|examine}}`,
-    },
-    ha: {
-      type: 'wikitext',
-      wikitext: `{{HA|${item}}}`,
-    },
-    la: {
-      type: 'wikitext',
-      wikitext: `{{LA|${item}}}`,
-    },
-    limit: {
-      type: 'wikitext',
-      wikitext: `{{GEInfo|${item}|limit}}`,
-    },
-    volume: {
-      type: 'wikitext',
-      wikitext: `{{GEInfo|${item}|volume}}`,
-    },
-    latest: {
-      type: 'real-time-price',
-      url: new URL('https://prices.runescape.wiki/api/v1/osrs/latest'),
-      params: [
-        {
-          name: 'id',
-          value: await getId(),
-        },
-      ],
-    },
-    timeseries: {
-      type: 'real-time-price',
-      url: new URL(`https://prices.runescape.wiki/api/v1/osrs/timeseries`),
-      params: [
-        {
-          name: 'id',
-          value: await getId(),
-        },
-        {
-          name: 'timestep',
-          value: timestep || '5m',
-        },
-      ],
-      timestep,
-    },
-  };
-
-  async function getId() {
-    const idRequired = ['latest', 'timeseries'].some(prop =>
-      Array.isArray(properties)
-        ? properties.includes(prop as OSRSWiki.ItemData.PropertyKey)
-        : properties === prop
-    );
-
-    if (!id && idRequired) {
-      id = (await getItemData(item, 'id')).id;
-    }
-
-    return id;
+  if (filteredTemplates) {
+    filteredRequests.templates = requests.templates;
   }
 
-  return await dispatch(map, properties);
-}
+  for await (const [key, value] of Object.entries(filteredRequests)) {
+    if (key === 'templates') {
+      const templates: OSRSWiki.TemplateData = await value();
 
-export async function getData(
-  properties: OSRSWiki.Data.PropertyMapKey[] | OSRSWiki.Data.PropertyMapKey
-) {
-  const map: OSRSWiki.Data.PropertyMap = {
-    geids: {
-      type: 'wikitext',
-      wikitext: `{{Module:GEIDs/data.json}}`,
-    },
-    prices: {
-      type: 'real-time-price',
-      url: new URL('https://prices.runescape.wiki/api/v1/osrs/latest'),
-    },
+      Object.entries(templates).forEach(([key, value]) => {
+        data[key] = value as Partial<OSRSWiki.Data>;
+      });
+
+      continue;
+    }
+
+    data[key] = await value();
+  }
+
+  return data as {
+    [K in P]: OSRSWiki.Data[K];
   };
-
-  return await dispatch(map, properties);
 }
 
 export async function search(query: string) {
@@ -218,72 +211,28 @@ export async function search(query: string) {
   url.searchParams.append('format', 'json');
 
   const res = await fetch(url);
-  const json = await res.json();
-
-  return json[1];
-}
-
-// Items
-
-export async function getGEIDs() {
-  const res = await fetch(
-    'https://oldschool.runescape.wiki/?title=Module:GEIDs/data.json&action=raw&ctype=application%2Fjson'
-  );
 
   return await res.json();
 }
-
-// export async function getPriceDataTimeseries(
-//   title: string,
-//   timestep: '5m' | '1h' | '6h' | '24h' = '5m'
-// ): Promise<OSRSWiki.RealTimePriceData.Timeseries> {
-//   const id = (await getData(['id'], title)).id;
-
-//   const url = new URL('https://prices.runescape.wiki/api/v1/osrs/timeseries');
-//   url.searchParams.append('id', id.toString());
-//   url.searchParams.append('timestep', timestep);
-
-//   const res = await fetch(url);
-//   const json = await res.json();
-
-//   return json.data;
-// }
-
-// export async function getPriceData(
-//   title: string
-// ): Promise<OSRSWiki.RealTimePriceData.Latest> {
-//   const id = (await getData(['id'], title)).id;
-
-//   const url = new URL('https://prices.runescape.wiki/api/v1/osrs/latest');
-//   url.searchParams.append('id', id.toString());
-
-//   const res = await fetch(url);
-//   const json = await res.json();
-
-//   return json.data[id.toString()];
-// }
 
 export function formatUnixTimestamp(timestamp: number) {
   return new Date(timestamp * 1000);
 }
 
-export function createItem(item: string) {
-  return {
-    getData(
-      properties:
-        | OSRSWiki.ItemData.PropertyKey
-        | OSRSWiki.ItemData.PropertyKey[],
-      options?: OSRSWiki.ItemData.Options
-    ) {
-      return getItemData(item, properties, options);
-    },
-  };
+export function iconPath(icon: string, detailed = false) {
+  if (detailed) {
+    const { name, ext } = path.parse(icon);
+    return `https://oldschool.runescape.wiki/images/${name}_detail${ext}`;
+  }
+
+  return `https://oldschool.runescape.wiki/images/${icon}`;
 }
 
 const osrsWiki = {
   search,
   getData,
-  createItem,
+  formatUnixTimestamp,
+  iconPath,
 };
 
 export default osrsWiki;

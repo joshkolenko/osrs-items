@@ -1,7 +1,7 @@
 import type { WikiAPIResponse } from '@/types';
 
 import { NextRequest } from 'next/server';
-import { getGEIDs } from '@/util/osrs-wiki';
+import { getGEIDs } from '@/util/osrs-items';
 
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;

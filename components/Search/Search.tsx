@@ -1,37 +1,32 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, RefObject } from 'react';
+import type { Item } from '@/types';
+
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch } from '@fortawesome/free-solid-svg-icons';
-import { getData } from '@/util/osrs-wiki';
 import { matchSorter } from 'match-sorter';
+
+import useItems from '@/hooks/useItems';
 import Results from './Results';
 
 export default function Search() {
-  const [geids, setGeids] = useState({} as { [key: string]: number });
+  const items = useItems();
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState([] as string[]);
+  const [results, setResults] = useState([] as Item[]);
   const inputRef = useRef<HTMLLabelElement>(null);
 
-  useEffect(() => {
-    async function getGeids() {
-      console.log('FETCHING');
-      const { geids } = await getData('geids');
-      setGeids(geids);
-    }
-
-    getGeids();
-  }, []);
-
   const updateResults = useCallback(() => {
-    if (query) {
-      const matches = matchSorter(Object.keys(geids), query).slice(0, 25);
+    if (query && items.length > 0) {
+      const matches = matchSorter(items, query, {
+        keys: ['name'],
+      }).slice(0, 25);
 
       setResults(matches);
     } else {
       setResults([]);
     }
-  }, [query, geids]);
+  }, [query, items]);
 
   useEffect(() => {
     updateResults();

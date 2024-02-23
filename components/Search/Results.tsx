@@ -1,19 +1,20 @@
+import type { Item } from '@/types';
+
 import Link from 'next/link';
-import { Dispatch, SetStateAction } from 'react';
 
 export default function Results({
   query,
   results,
 }: {
   query: string;
-  results: string[];
+  results: Item[];
 }) {
   if (results.length === 0) {
     return null;
   }
 
   const rendered = results.map(result => {
-    const renderedText = result.split('').map((char, i) => {
+    const renderedText = result.name.split('').map((char, i) => {
       if (query.toLowerCase().includes(char.toLowerCase())) {
         return (
           <span key={char + i} className="font-semibold text-yellow-500">
@@ -26,9 +27,9 @@ export default function Results({
     });
 
     return (
-      <li key={result}>
+      <li key={result.id}>
         <Link
-          href={'/item/' + encodeURIComponent(result)}
+          href={'/item/' + encodeURIComponent(result.name)}
           className="block px-3 py-2 text-sm rounded-md hover:bg-neutral hover:text-neutral-content focus:bg-neutral focus:text-neutral-content"
         >
           {renderedText}

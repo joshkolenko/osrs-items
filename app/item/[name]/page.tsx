@@ -1,18 +1,10 @@
 import type { TimeseriesData } from '@/types';
 
-import { getItem, getTimeseries, getItems } from '@/util/osrs-items';
+import { getItem, getTimeseries } from '@/util/osrs-items';
 
 import Container from '@/components/Container/Container';
 import Stats from '@/components/Stats';
 import Icon from '@/components/Icon';
-
-export async function generateStaticParams() {
-  const items = await getItems();
-
-  return items.map(item => ({
-    name: item.name,
-  }));
-}
 
 export default async function Page({ params }: { params: { name: string } }) {
   const name = decodeURIComponent(params.name);

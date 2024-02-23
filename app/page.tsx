@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, MutableRefObject } from 'react';
+import React from 'react';
 
 import Container from '@/components/Container/Container';
 

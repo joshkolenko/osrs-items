@@ -1,13 +1,12 @@
 import type { Metadata } from 'next';
 
 import { Inter } from 'next/font/google';
-
-import Link from 'next/link';
-
-import './globals.css';
-import Nav from '@/components/Nav';
 import { ItemsProvider } from '@/context/Items';
 import { getItems } from '@/util/osrs-items';
+
+import Nav from '@/components/Nav';
+
+import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 

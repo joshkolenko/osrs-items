@@ -1,4 +1,4 @@
-import numeral from 'numeral';
+import { formatNumber } from '@/util/format-number';
 
 export type PriceChangeProps = {
   latest: number;
@@ -9,7 +9,7 @@ export default function PriceChange({ latest, previous }: PriceChangeProps) {
   const change = latest - previous;
   const changePercentage = (change / latest) * 100;
 
-  const formattedChange = numeral(Math.abs(change)).format('0,0');
+  const formattedChange = formatNumber(Math.abs(change));
 
   return (
     <div>

@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, MutableRefObject } from 'react';
 
-import Link from 'next/link';
 import Container from '@/components/Container/Container';
 
 export default function Home() {
